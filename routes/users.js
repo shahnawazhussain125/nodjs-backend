@@ -1,63 +1,97 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Users = require('../model/Users');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
+const Users = require("../model/Users");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
+  const { email, password, full_name } = req.body;
 
-    const user = req.body;
-    const response = await Users.find({email: user.email});
-   
-    if(response.length)
-    {
-        res.send(500, {message: "This email is already registered!"});
-        return;
-    }
-    
-    const hash = hashPassword(user.password);
+  console.log("{ email, password, full_name }", { email, password, full_name });
 
-    const newUser = new Users({
-        full_name: user.full_name,
-        email: user.email, 
-        password: hash
-    });
+  if (!validateEmail(email)) {
+    res.status(500).send({ message: "Email is badly formated" });
+    return;
+  }
 
-    newUser.save()
-    .then(() => res.send({message: "User registered successfully!"}))
-    .catch(e => res.send(500, {message: e.message}));
-})
+  if (password.length < 6) {
+    res.status(500).send({ message: "Password must be at least 6 character" });
+  }
 
-router.post('/login', async (req, res) => {
-    
-    //Check Email
-    const user = await Users.find({email: req.body.email});
-    
-    if(!user.length) {
-        res.send(500, {message: "User not found!"});
-        return;
-    }
+  const response = await Users.find({ email: email });
 
-    //Compare Email
-    const passwordMatched = bcrypt.compareSync(req.body.password, user[0].password);
+  if (response.length) {
+    res.status(500).send({ message: "This email is already registered!" });
+    return;
+  }
 
-    if(!passwordMatched) {
-        res.send(500, {message: "Incorrect Email/Password!"});
-        return;
-    }
+  const hash = hashPassword(password);
 
-    //Generate Token
-    const token = jwt.sign({user: user[0]}, 'anySecretKey');
-    res.send({user: user[0], token});
-})
+  const newUser = new Users({
+    full_name,
+    email,
+    password: hash
+  });
 
+  newUser
+    .save()
+    .then(response => {
+      console.log("response", response);
+      //Generate Token
+      const token = jwt.sign({ user: response }, "anySecretKey");
 
+      res.send({
+        user: {
+          full_name,
+          email,
+          _id
+        },
+        token,
+        message: "User registered successfully!"
+      });
+    })
+    .catch(e => res.status(500).send({ message: e.message }));
+});
+
+router.post("/login", async (req, res) => {
+  //Check Email
+  let { email, password } = req.body;
+
+  if (!validateEmail(email)) {
+    res.status(500).send({ message: "Email is badly formated" });
+    return;
+  }
+
+  const user = await Users.find({ email: email });
+
+  if (!user.length) {
+    res.status(500).send({ message: "User not found!" });
+    return;
+  }
+
+  //Compare Password
+  const passwordMatched = bcrypt.compareSync(password, user[0].password);
+
+  if (!passwordMatched) {
+    res.status(500).send({ message: "Incorrect Email/Password!" });
+    return;
+  }
+
+  //Generate Token
+  const token = jwt.sign({ user: user[0] }, "anySecretKey");
+  res.send({ user: user[0], token });
+});
+
+function validateEmail(email) {
+  let regx = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+  return regx.test(email);
+}
 
 function hashPassword(password) {
-    var salt = bcrypt.genSaltSync(10);
-    var hash = bcrypt.hashSync(password, salt);
+  var salt = bcrypt.genSaltSync(10);
+  var hash = bcrypt.hashSync(password, salt);
 
-    return hash;
+  return hash;
 }
 
 module.exports = router;
