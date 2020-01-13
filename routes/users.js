@@ -7,7 +7,12 @@ const jwt = require("jsonwebtoken");
 router.post("/register", async (req, res) => {
   const { email, password, full_name } = req.body;
 
-  console.log("{ email, password, full_name }", { email, password, full_name });
+  console.log("{ email, password, full_name }", {
+    email,
+    password,
+    full_name,
+    type
+  });
 
   if (!validateEmail(email)) {
     res.status(500).send({ message: "Email is badly formated" });
@@ -16,6 +21,7 @@ router.post("/register", async (req, res) => {
 
   if (password.length < 6) {
     res.status(500).send({ message: "Password must be at least 6 character" });
+    return;
   }
 
   const response = await Users.find({ email: email });
@@ -30,6 +36,7 @@ router.post("/register", async (req, res) => {
   const newUser = new Users({
     full_name,
     email,
+    type,
     password: hash
   });
 
@@ -44,7 +51,8 @@ router.post("/register", async (req, res) => {
         user: {
           full_name,
           email,
-          _id
+          type,
+          uid: response._id
         },
         token,
         message: "User registered successfully!"
