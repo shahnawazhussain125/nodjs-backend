@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 router.post("/register", async (req, res) => {
-  const { email, password, full_name } = req.body;
+  const { email, password, full_name, type } = req.body;
 
   console.log("{ email, password, full_name }", {
     email,
@@ -101,5 +101,19 @@ function hashPassword(password) {
 
   return hash;
 }
+
+router.post("/test", (req, res) => {
+  let { uid } = req.body;
+
+  Users.findById(uid)
+    .exec()
+    .then(response => {
+      console.log("response", response);
+      res.send(response);
+    })
+    .catch(error => {
+      console.log("Error", error);
+    });
+});
 
 module.exports = router;

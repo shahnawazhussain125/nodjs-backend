@@ -1,20 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const Posts = require("../model/Posts");
+const Doctors = require("../model/Doctor");
 
 router.get("/getAll", async (req, res) => {
   try {
-    const posts = await Posts.find({});
-    res.send(posts);
+    const doctors = await Doctors.find({});
+    res.send(doctors);
   } catch (e) {
     res.send(500, { message: e.message });
   }
 });
 
-router.get("/getMyPost/:user_id", async (req, res) => {
-  const user_id = req.params.user_id;
+router.get("/getProfile/:uid", async (req, res) => {
+  const uid = req.params.uid;
 
-  Posts.find({ user_id: user_id })
+  Doctors.findById(uid)
     .exec()
     .then(data => {
       console.log("data ======> ", data);
@@ -37,8 +37,8 @@ router.get("/getMyPost/:user_id", async (req, res) => {
 router.put("/updatePost/:id", async (req, res) => {
   const id = req.params.id;
   const updateObject = req.body;
-  console.log("update Object ", updateObject)
-  Posts.update({ _id: id }, { $set: updateObject })
+  console.log("update Object ", updateObject);
+  Doctors.update({ _id: id }, { $set: updateObject })
     .exec()
     .then(() => {
       res.status(200).json({
@@ -55,22 +55,10 @@ router.put("/updatePost/:id", async (req, res) => {
     });
 });
 
-// router.get('/deletePost', (req, res) => {
-
-//     const post = await Posts.deleteOne();
-
-//     if(!post.length) {
-//         res.send(500, { message: "Post was not found!" });
-//         return;
-//     }
-
-//     res.send(post);
-// })
-
 router.post("/addPost", (req, res) => {
   const post = req.body;
 
-  const newPost = new Posts({
+  const newPost = new Doctors({
     user_id: post.user_id,
     user_name: post.user_name,
     blood_group: post.blood_group,
@@ -86,7 +74,7 @@ router.post("/addPost", (req, res) => {
     voluntreers_uptill_now: 0,
     current_requirement: post.no_of_blood_required,
     voluntreers: [],
-    comments: [],
+    comments: []
   });
 
   newPost
